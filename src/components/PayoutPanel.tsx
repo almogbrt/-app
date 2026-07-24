@@ -1,28 +1,32 @@
 import { useMemo } from "react";
-import type { FamilyMember, HomeTask } from "../types";
+import type { FamilyMember, TaskCompletion } from "../types";
 import { Avatar } from "./Avatar";
 
 interface Props {
   members: FamilyMember[];
-  tasks: HomeTask[];
+  completions: TaskCompletion[];
   rate: number;
   setRate: (rate: number) => void;
   onPayout: () => void;
   onClose: () => void;
 }
 
-export function PayoutPanel({ members, tasks, rate, setRate, onPayout, onClose }: Props) {
+export function PayoutPanel({
+  members,
+  completions,
+  rate,
+  setRate,
+  onPayout,
+  onClose,
+}: Props) {
   const unpaidPoints = useMemo(() => {
     const totals: Record<string, number> = {};
-    for (const t of tasks) {
-      if (!t.assigneeId) continue;
-      const unpaid = (t.completedCount ?? 0) - (t.paidOutCount ?? 0);
-      if (unpaid > 0) {
-        totals[t.assigneeId] = (totals[t.assigneeId] ?? 0) + unpaid * t.points;
-      }
+    for (const c of completions) {
+      if (!c.memberId || c.paidOut) continue;
+      totals[c.memberId] = (totals[c.memberId] ?? 0) + c.points;
     }
     return totals;
-  }, [tasks]);
+  }, [completions]);
 
   const totalPoints = Object.values(unpaidPoints).reduce((a, b) => a + b, 0);
   const hasAnything = totalPoints > 0;

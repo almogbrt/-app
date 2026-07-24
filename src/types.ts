@@ -46,7 +46,16 @@ export interface HomeTask {
   done: boolean;
   completedAt: string | null;
   completedCount?: number;
-  paidOutCount?: number;
   proofPhoto?: string | null;
   createdAt: string;
+}
+
+export interface TaskCompletion {
+  id: string;
+  taskId: string;
+  memberId: string | null;
+  points: number;
+  photo: string;
+  completedAt: string;
+  paidOut: boolean;
 }

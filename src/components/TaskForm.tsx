@@ -46,7 +46,6 @@ export function TaskForm({ members, pets, onAdd }: Props) {
       done: false,
       completedAt: null,
       completedCount: 0,
-      paidOutCount: 0,
       proofPhoto: null,
       createdAt: new Date().toISOString(),
     });

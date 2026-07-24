@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { FamilyMember, HomeTask, Pet, TaskCategory } from "./types";
+import type { FamilyMember, HomeTask, Pet, TaskCategory, TaskCompletion } from "./types";
 import { useLocalStorage } from "./useLocalStorage";
 import { MembersBar } from "./components/MembersBar";
 import { PetsBar } from "./components/PetsBar";
@@ -9,7 +9,7 @@ import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
 import { PointsDashboard } from "./components/PointsDashboard";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
-import { nextOccurrence, shuffle, todayISO } from "./utils";
+import { nextOccurrence, shuffle, todayISO, uid } from "./utils";
 
 const avatarUrl = (file: string) => `${import.meta.env.BASE_URL}avatars/${file}`;
 
@@ -49,7 +49,6 @@ function seedTask(
     done: false,
     completedAt: null,
     completedCount: 0,
-    paidOutCount: 0,
     proofPhoto: null,
     createdAt: new Date().toISOString(),
   };
@@ -84,6 +83,38 @@ function App() {
     "home-tasks/lastAssignDate",
     "",
   );
+  const [completions, setCompletions] = useLocalStorage<TaskCompletion[]>(
+    "home-tasks/completions",
+    [],
+  );
+  const [completionsMigrated, setCompletionsMigrated] = useLocalStorage<boolean>(
+    "home-tasks/completionsMigrated",
+    false,
+  );
+
+  // One-time: convert points earned under the old task-level completedCount
+  // model (which mis-attributed everything to the task's *current* assignee)
+  // into individual completion records, so future reassignment can't retroactively
+  // change who past points belong to.
+  useEffect(() => {
+    if (completionsMigrated) return;
+    setCompletions((prevCompletions) => {
+      if (prevCompletions.length > 0) return prevCompletions;
+      const migrated: TaskCompletion[] = tasks
+        .filter((t) => (t.completedCount ?? 0) > 0 && t.assigneeId)
+        .map((t) => ({
+          id: uid(),
+          taskId: t.id,
+          memberId: t.assigneeId,
+          points: t.points * (t.completedCount ?? 0),
+          photo: t.proofPhoto ?? "",
+          completedAt: t.completedAt ?? new Date().toISOString(),
+          paidOut: false,
+        }));
+      return migrated.length ? [...migrated, ...prevCompletions] : prevCompletions;
+    });
+    setCompletionsMigrated(true);
+  }, [completionsMigrated, tasks, setCompletions, setCompletionsMigrated]);
 
   // One-time repair for photo URLs saved before the GitHub Pages base-path fix.
   useEffect(() => {
@@ -162,14 +193,13 @@ function App() {
 
   const pointsByMember = useMemo(() => {
     const totals: Record<string, number> = {};
-    for (const task of tasks) {
-      const count = task.completedCount ?? 0;
-      if (task.assigneeId && count > 0) {
-        totals[task.assigneeId] = (totals[task.assigneeId] ?? 0) + task.points * count;
+    for (const c of completions) {
+      if (c.memberId) {
+        totals[c.memberId] = (totals[c.memberId] ?? 0) + c.points;
       }
     }
     return totals;
-  }, [tasks]);
+  }, [completions]);
 
   function addTask(task: HomeTask) {
     setTasks((prev) => [task, ...prev]);
@@ -180,6 +210,22 @@ function App() {
   }
 
   function completeTask(id: string, photo: string) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    setCompletions((prev) => [
+      {
+        id: uid(),
+        taskId: id,
+        memberId: task.assigneeId,
+        points: task.points,
+        photo,
+        completedAt: new Date().toISOString(),
+        paidOut: false,
+      },
+      ...prev,
+    ]);
+
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
@@ -208,6 +254,12 @@ function App() {
   }
 
   function uncompleteTask(id: string) {
+    setCompletions((prev) => {
+      const idx = prev.findIndex((c) => c.taskId === id);
+      if (idx === -1) return prev;
+      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+    });
+
     setTasks((prev) =>
       prev.map((t) =>
         t.id === id && t.done
@@ -223,13 +275,7 @@ function App() {
   }
 
   function runWeeklyPayout() {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.assigneeId && (t.completedCount ?? 0) > (t.paidOutCount ?? 0)
-          ? { ...t, paidOutCount: t.completedCount ?? 0 }
-          : t,
-      ),
-    );
+    setCompletions((prev) => prev.map((c) => (c.paidOut ? c : { ...c, paidOut: true })));
   }
 
   const filteredTasks = useMemo(() => {
@@ -286,7 +332,7 @@ function App() {
           <section className="mb-6">
             <PayoutPanel
               members={members}
-              tasks={tasks}
+              completions={completions}
               rate={rate}
               setRate={setRate}
               onPayout={runWeeklyPayout}
