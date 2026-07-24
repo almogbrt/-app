@@ -45,7 +45,9 @@ export function TaskForm({ members, pets, onAdd }: Props) {
       points,
       done: false,
       completedAt: null,
-      paidOut: false,
+      completedCount: 0,
+      paidOutCount: 0,
+      proofPhoto: null,
       createdAt: new Date().toISOString(),
     });
     reset();

@@ -45,6 +45,8 @@ export interface HomeTask {
   points: number;
   done: boolean;
   completedAt: string | null;
-  paidOut: boolean;
+  completedCount?: number;
+  paidOutCount?: number;
+  proofPhoto?: string | null;
   createdAt: string;
 }

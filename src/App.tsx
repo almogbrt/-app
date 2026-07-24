@@ -7,6 +7,7 @@ import { TaskForm } from "./components/TaskForm";
 import { TaskItem } from "./components/TaskItem";
 import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
+import { PointsDashboard } from "./components/PointsDashboard";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, todayISO } from "./utils";
 
@@ -47,22 +48,26 @@ function seedTask(
     points,
     done: false,
     completedAt: null,
-    paidOut: false,
+    completedCount: 0,
+    paidOutCount: 0,
+    proofPhoto: null,
     createdAt: new Date().toISOString(),
   };
 }
 
 const SEED_TASKS: HomeTask[] = [
-  seedTask("seed-dishwasher-in", "להכניס מדיח", "מטבח", "daily", 5),
-  seedTask("seed-dishwasher-out", "לפנות מדיח", "מטבח", "daily", 5),
-  seedTask("seed-trash-out", "להוריד זבל", "ניקיון", "daily", 6),
-  seedTask("seed-bins-curb", "סיבוב פחים", "ניקיון", "weekly", 8),
+  seedTask("seed-dishwasher-in", "להכניס מדיח", "מטבח", "daily", 10),
+  seedTask("seed-dishwasher-out", "לפנות מדיח", "מטבח", "daily", 8),
+  seedTask("seed-trash-out", "להוריד זבל", "ניקיון", "daily", 8),
+  seedTask("seed-bins-curb", "סיבוב פחים", "ניקיון", "weekly", 6),
   seedTask("seed-laundry-down", "להוריד כביסה", "כביסה", "weekly", 5),
   seedTask("seed-laundry-hang", "לתלות כביסה", "כביסה", "weekly", 5),
-  seedTask("seed-charlie-walk", "סיבוב לצ'ארלי", "חיות מחמד", "daily", 5, "charlie"),
-  seedTask("seed-noga-water", "מים לנוגה", "חיות מחמד", "daily", 5, "noga"),
-  seedTask("seed-zigi-food", "אוכל לזיגי", "חיות מחמד", "daily", 5, "zigi"),
+  seedTask("seed-charlie-walk", "סיבוב לצ'ארלי", "חיות מחמד", "daily", 8, "charlie"),
+  seedTask("seed-noga-water", "מים לנוגה", "חיות מחמד", "daily", 8, "noga"),
+  seedTask("seed-zigi-food", "אוכל לזיגי", "חיות מחמד", "daily", 8, "zigi"),
 ];
+
+const SEED_BY_ID = new Map(SEED_TASKS.map((t) => [t.id, t]));
 
 function App() {
   const [members, setMembers] = useLocalStorage<FamilyMember[]>(
@@ -91,12 +96,23 @@ function App() {
     });
   }, [setMembers]);
 
-  // Add the requested household seed tasks if they aren't already present.
+  // Add the requested household seed tasks if they aren't already present,
+  // and keep already-added seed tasks' point values in sync with the latest list.
   useEffect(() => {
     setTasks((prev) => {
-      const existingIds = new Set(prev.map((t) => t.id));
+      let changed = false;
+      const updated = prev.map((t) => {
+        const seed = SEED_BY_ID.get(t.id);
+        if (seed && seed.points !== t.points) {
+          changed = true;
+          return { ...t, points: seed.points };
+        }
+        return t;
+      });
+      const existingIds = new Set(updated.map((t) => t.id));
       const missing = SEED_TASKS.filter((t) => !existingIds.has(t.id));
-      return missing.length ? [...missing, ...prev] : prev;
+      if (missing.length) changed = true;
+      return changed ? [...missing, ...updated] : prev;
     });
   }, [setTasks]);
 
@@ -115,8 +131,9 @@ function App() {
   const pointsByMember = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const task of tasks) {
-      if (task.done && task.assigneeId) {
-        totals[task.assigneeId] = (totals[task.assigneeId] ?? 0) + task.points;
+      const count = task.completedCount ?? 0;
+      if (task.assigneeId && count > 0) {
+        totals[task.assigneeId] = (totals[task.assigneeId] ?? 0) + task.points * count;
       }
     }
     return totals;
@@ -130,32 +147,56 @@ function App() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
-  function toggleTask(id: string) {
+  function completeTask(id: string, photo: string) {
     setTasks((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
+        const completedCount = (t.completedCount ?? 0) + 1;
 
-        if (!t.done && t.recurrence !== "none" && t.dueDate) {
+        if (t.recurrence !== "none" && t.dueDate) {
           return {
             ...t,
             done: false,
             completedAt: new Date().toISOString(),
+            completedCount,
+            proofPhoto: photo,
             dueDate: nextOccurrence(t.dueDate, t.recurrence),
           };
         }
 
         return {
           ...t,
-          done: !t.done,
-          completedAt: !t.done ? new Date().toISOString() : null,
+          done: true,
+          completedAt: new Date().toISOString(),
+          completedCount,
+          proofPhoto: photo,
         };
       }),
     );
   }
 
+  function uncompleteTask(id: string) {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id && t.done
+          ? {
+              ...t,
+              done: false,
+              completedAt: null,
+              completedCount: Math.max(0, (t.completedCount ?? 0) - 1),
+            }
+          : t,
+      ),
+    );
+  }
+
   function runWeeklyPayout() {
     setTasks((prev) =>
-      prev.map((t) => (t.done && !t.paidOut ? { ...t, paidOut: true } : t)),
+      prev.map((t) =>
+        t.assigneeId && (t.completedCount ?? 0) > (t.paidOutCount ?? 0)
+          ? { ...t, paidOutCount: t.completedCount ?? 0 }
+          : t,
+      ),
     );
   }
 
@@ -180,7 +221,7 @@ function App() {
 
   const openCount = tasks.filter((t) => !t.done).length;
   const doneToday = tasks.filter(
-    (t) => t.done && t.completedAt?.slice(0, 10) === todayISO(),
+    (t) => t.completedAt?.slice(0, 10) === todayISO(),
   ).length;
 
   return (
@@ -204,6 +245,10 @@ function App() {
             💰 תשלום שבועי
           </button>
         </header>
+
+        <section className="mb-6">
+          <PointsDashboard members={members} pointsByMember={pointsByMember} />
+        </section>
 
         {showPayout && (
           <section className="mb-6">
@@ -272,7 +317,8 @@ function App() {
                 task={task}
                 assignee={task.assigneeId ? (membersById[task.assigneeId] ?? null) : null}
                 pet={task.petId ? (petsById[task.petId] ?? null) : null}
-                onToggle={toggleTask}
+                onComplete={completeTask}
+                onUncomplete={uncompleteTask}
                 onDelete={deleteTask}
               />
             ))

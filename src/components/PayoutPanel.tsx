@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import type { FamilyMember, HomeTask } from "../types";
 import { Avatar } from "./Avatar";
-import { startOfWeekISO } from "../utils";
 
 interface Props {
   members: FamilyMember[];
@@ -13,19 +12,19 @@ interface Props {
 }
 
 export function PayoutPanel({ members, tasks, rate, setRate, onPayout, onClose }: Props) {
-  const weekStart = useMemo(() => startOfWeekISO(), []);
-
-  const weeklyPoints = useMemo(() => {
+  const unpaidPoints = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const t of tasks) {
-      if (t.done && !t.paidOut && t.assigneeId && t.completedAt && t.completedAt >= weekStart) {
-        totals[t.assigneeId] = (totals[t.assigneeId] ?? 0) + t.points;
+      if (!t.assigneeId) continue;
+      const unpaid = (t.completedCount ?? 0) - (t.paidOutCount ?? 0);
+      if (unpaid > 0) {
+        totals[t.assigneeId] = (totals[t.assigneeId] ?? 0) + unpaid * t.points;
       }
     }
     return totals;
-  }, [tasks, weekStart]);
+  }, [tasks]);
 
-  const totalPoints = Object.values(weeklyPoints).reduce((a, b) => a + b, 0);
+  const totalPoints = Object.values(unpaidPoints).reduce((a, b) => a + b, 0);
   const hasAnything = totalPoints > 0;
 
   return (
@@ -61,7 +60,7 @@ export function PayoutPanel({ members, tasks, rate, setRate, onPayout, onClose }
       ) : (
         <div className="space-y-2">
           {members.map((m) => {
-            const pts = weeklyPoints[m.id] ?? 0;
+            const pts = unpaidPoints[m.id] ?? 0;
             return (
               <div
                 key={m.id}
