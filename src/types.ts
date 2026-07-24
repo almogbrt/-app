@@ -9,9 +9,18 @@ export type MemberColor =
 export interface FamilyMember {
   id: string;
   name: string;
+  age?: number;
   color: MemberColor;
   avatar: string;
   photo?: string;
+}
+
+export type PetSpecies = "dog" | "turtle" | "bird";
+
+export interface Pet {
+  id: string;
+  name: string;
+  species: PetSpecies;
 }
 
 export type TaskCategory =
@@ -30,10 +39,12 @@ export interface HomeTask {
   notes?: string;
   category: TaskCategory;
   assigneeId: string | null;
+  petId: string | null;
   dueDate: string | null;
   recurrence: Recurrence;
   points: number;
   done: boolean;
   completedAt: string | null;
+  paidOut: boolean;
   createdAt: string;
 }

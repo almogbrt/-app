@@ -1,18 +1,20 @@
 import { useState } from "react";
-import type { FamilyMember, HomeTask, Recurrence, TaskCategory } from "../types";
-import { CATEGORY_ICONS, TASK_CATEGORIES } from "../constants";
+import type { FamilyMember, HomeTask, Pet, Recurrence, TaskCategory } from "../types";
+import { CATEGORY_ICONS, PET_ICONS, TASK_CATEGORIES } from "../constants";
 import { todayISO, uid } from "../utils";
 
 interface Props {
   members: FamilyMember[];
+  pets: Pet[];
   onAdd: (task: HomeTask) => void;
 }
 
-export function TaskForm({ members, onAdd }: Props) {
+export function TaskForm({ members, pets, onAdd }: Props) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<TaskCategory>("אחר");
   const [assigneeId, setAssigneeId] = useState<string>("");
+  const [petId, setPetId] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>(todayISO());
   const [recurrence, setRecurrence] = useState<Recurrence>("none");
   const [points, setPoints] = useState(5);
@@ -21,6 +23,7 @@ export function TaskForm({ members, onAdd }: Props) {
     setTitle("");
     setCategory("אחר");
     setAssigneeId("");
+    setPetId("");
     setDueDate(todayISO());
     setRecurrence("none");
     setPoints(5);
@@ -36,11 +39,13 @@ export function TaskForm({ members, onAdd }: Props) {
       title: trimmed,
       category,
       assigneeId: assigneeId || null,
+      petId: petId || null,
       dueDate: dueDate || null,
       recurrence,
       points,
       done: false,
       completedAt: null,
+      paidOut: false,
       createdAt: new Date().toISOString(),
     });
     reset();
@@ -102,6 +107,24 @@ export function TaskForm({ members, onAdd }: Props) {
             ))}
           </select>
         </label>
+
+        {category === "חיות מחמד" && (
+          <label className="flex flex-col gap-1 text-sm text-slate-500">
+            חיית מחמד
+            <select
+              value={petId}
+              onChange={(e) => setPetId(e.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-2 dark:border-slate-700 dark:bg-slate-800"
+            >
+              <option value="">ללא</option>
+              {pets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {PET_ICONS[p.species]} {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-sm text-slate-500">
           תאריך יעד

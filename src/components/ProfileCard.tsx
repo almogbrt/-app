@@ -21,6 +21,11 @@ export function ProfileCard({ member, tasks, points }: Props) {
       <div className="min-w-0 flex-1">
         <h2 className="truncate text-lg font-bold text-slate-800 dark:text-slate-100">
           {member.name}
+          {member.age !== undefined && (
+            <span className="mr-2 text-sm font-normal text-slate-400">
+              גיל {member.age}
+            </span>
+          )}
         </h2>
         <div className="mt-1 flex flex-wrap gap-2 text-sm">
           <span className={`rounded-full px-2.5 py-1 font-medium ${colors.chip}`}>

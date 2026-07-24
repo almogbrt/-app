@@ -1,16 +1,17 @@
-import type { FamilyMember, HomeTask } from "../types";
-import { CATEGORY_ICONS, COLOR_CLASSES } from "../constants";
+import type { FamilyMember, HomeTask, Pet } from "../types";
+import { CATEGORY_ICONS, COLOR_CLASSES, PET_ICONS } from "../constants";
 import { formatDueDate, isOverdue } from "../utils";
 import { Avatar } from "./Avatar";
 
 interface Props {
   task: HomeTask;
   assignee: FamilyMember | null;
+  pet: Pet | null;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function TaskItem({ task, assignee, onToggle, onDelete }: Props) {
+export function TaskItem({ task, assignee, pet, onToggle, onDelete }: Props) {
   const overdue = !task.done && isOverdue(task.dueDate);
   const colors = assignee ? COLOR_CLASSES[assignee.color] : null;
 
@@ -76,6 +77,11 @@ export function TaskItem({ task, assignee, onToggle, onDelete }: Props) {
           <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             {task.points} ⭐
           </span>
+          {pet && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              {PET_ICONS[pet.species]} {pet.name}
+            </span>
+          )}
         </div>
       </div>
 

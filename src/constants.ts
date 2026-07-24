@@ -1,4 +1,4 @@
-import type { MemberColor, TaskCategory } from "./types";
+import type { MemberColor, PetSpecies, TaskCategory } from "./types";
 
 export const MEMBER_COLORS: MemberColor[] = [
   "rose",
@@ -80,4 +80,10 @@ export const RECURRENCE_LABELS: Record<string, string> = {
   daily: "יומי",
   weekly: "שבועי",
   monthly: "חודשי",
+};
+
+export const PET_ICONS: Record<PetSpecies, string> = {
+  dog: "🐶",
+  turtle: "🐢",
+  bird: "🦜",
 };

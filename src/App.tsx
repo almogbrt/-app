@@ -1,20 +1,29 @@
 import { useMemo, useState } from "react";
-import type { FamilyMember, HomeTask, TaskCategory } from "./types";
+import type { FamilyMember, HomeTask, Pet, TaskCategory } from "./types";
 import { useLocalStorage } from "./useLocalStorage";
 import { MembersBar } from "./components/MembersBar";
+import { PetsBar } from "./components/PetsBar";
 import { TaskForm } from "./components/TaskForm";
 import { TaskItem } from "./components/TaskItem";
 import { ProfileCard } from "./components/ProfileCard";
+import { PayoutPanel } from "./components/PayoutPanel";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, todayISO } from "./utils";
 
 const DEFAULT_MEMBERS: FamilyMember[] = [
-  { id: "dad", name: "אבא", color: "sky", avatar: "👨", photo: "/avatars/dad.jpg" },
-  { id: "mom", name: "אמא", color: "rose", avatar: "👩", photo: "/avatars/mom.jpg" },
-  { id: "boy-1", name: "הבן הגדול", color: "emerald", avatar: "🧒", photo: "/avatars/boy-1.jpg" },
-  { id: "boy-2", name: "הבן האמצעי", color: "amber", avatar: "🧒", photo: "/avatars/boy-2.jpg" },
-  { id: "boy-3", name: "הבן הקטן", color: "violet", avatar: "🧒", photo: "/avatars/boy-3.jpg" },
+  { id: "dad", name: "אלמוג", color: "sky", avatar: "👨", photo: "/avatars/dad.jpg" },
+  { id: "mom", name: "רעות", color: "rose", avatar: "👩", photo: "/avatars/mom.jpg" },
+  { id: "noam", name: "נועם", age: 14, color: "emerald", avatar: "🧒", photo: "/avatars/noam.jpg" },
+  { id: "rom", name: "רום", age: 11, color: "amber", avatar: "🧒", photo: "/avatars/rom.jpg" },
+  { id: "niv", name: "ניב", age: 7, color: "violet", avatar: "🧒", photo: "/avatars/niv.jpg" },
 ];
+
+const DEFAULT_PETS: Pet[] = [
+  { id: "charlie", name: "צ'ארלי", species: "dog" },
+  { id: "noga", name: "נוגה", species: "turtle" },
+  { id: "zigi", name: "זיגי", species: "bird" },
+];
+
 const DEFAULT_TASKS: HomeTask[] = [];
 
 function App() {
@@ -22,19 +31,24 @@ function App() {
     "home-tasks/members",
     DEFAULT_MEMBERS,
   );
+  const [pets, setPets] = useLocalStorage<Pet[]>("home-tasks/pets", DEFAULT_PETS);
   const [tasks, setTasks] = useLocalStorage<HomeTask[]>(
     "home-tasks/tasks",
     DEFAULT_TASKS,
   );
+  const [rate, setRate] = useLocalStorage<number>("home-tasks/rate", 1);
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
+  const [activePetId, setActivePetId] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [category, setCategory] = useState<TaskCategory | "all">("all");
+  const [showPayout, setShowPayout] = useState(false);
 
   const membersById = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m])),
     [members],
   );
+  const petsById = useMemo(() => Object.fromEntries(pets.map((p) => [p.id, p])), [pets]);
 
   const pointsByMember = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -77,9 +91,16 @@ function App() {
     );
   }
 
+  function runWeeklyPayout() {
+    setTasks((prev) =>
+      prev.map((t) => (t.done && !t.paidOut ? { ...t, paidOut: true } : t)),
+    );
+  }
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => (activeMemberId ? t.assigneeId === activeMemberId : true))
+      .filter((t) => (activePetId ? t.petId === activePetId : true))
       .filter((t) => (category === "all" ? true : t.category === category))
       .filter((t) => {
         if (status === "pending") return !t.done;
@@ -93,7 +114,7 @@ function App() {
         if (b.dueDate) return 1;
         return b.createdAt.localeCompare(a.createdAt);
       });
-  }, [tasks, activeMemberId, category, status]);
+  }, [tasks, activeMemberId, activePetId, category, status]);
 
   const openCount = tasks.filter((t) => !t.done).length;
   const doneToday = tasks.filter(
@@ -108,20 +129,49 @@ function App() {
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <header className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">🏠 משימות הבית</h1>
+            <h1 className="text-2xl font-bold">🏠 The Bartian's</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {openCount} משימות פתוחות · {doneToday} הושלמו היום
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowPayout((v) => !v)}
+            className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+          >
+            💰 תשלום שבועי
+          </button>
         </header>
 
-        <section className="mb-6">
+        {showPayout && (
+          <section className="mb-6">
+            <PayoutPanel
+              members={members}
+              tasks={tasks}
+              rate={rate}
+              setRate={setRate}
+              onPayout={runWeeklyPayout}
+              onClose={() => setShowPayout(false)}
+            />
+          </section>
+        )}
+
+        <section className="mb-4">
           <MembersBar
             members={members}
             setMembers={setMembers}
             pointsByMember={pointsByMember}
             activeMemberId={activeMemberId}
             onSelectMember={setActiveMemberId}
+          />
+        </section>
+
+        <section className="mb-6">
+          <PetsBar
+            pets={pets}
+            setPets={setPets}
+            activePetId={activePetId}
+            onSelectPet={setActivePetId}
           />
         </section>
 
@@ -136,7 +186,7 @@ function App() {
         )}
 
         <section className="mb-6">
-          <TaskForm members={members} onAdd={addTask} />
+          <TaskForm members={members} pets={pets} onAdd={addTask} />
         </section>
 
         <section className="mb-4">
@@ -159,6 +209,7 @@ function App() {
                 key={task.id}
                 task={task}
                 assignee={task.assigneeId ? (membersById[task.assigneeId] ?? null) : null}
+                pet={task.petId ? (petsById[task.petId] ?? null) : null}
                 onToggle={toggleTask}
                 onDelete={deleteTask}
               />

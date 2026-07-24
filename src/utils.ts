@@ -36,3 +36,12 @@ export function nextOccurrence(dueDate: string, recurrence: Recurrence): string 
 export function uid(): string {
   return crypto.randomUUID();
 }
+
+export function startOfWeekISO(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - day);
+  sunday.setHours(0, 0, 0, 0);
+  return sunday.toISOString();
+}
