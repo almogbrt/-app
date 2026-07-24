@@ -10,12 +10,14 @@ import { PayoutPanel } from "./components/PayoutPanel";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, todayISO } from "./utils";
 
+const avatarUrl = (file: string) => `${import.meta.env.BASE_URL}avatars/${file}`;
+
 const DEFAULT_MEMBERS: FamilyMember[] = [
-  { id: "dad", name: "אלמוג", color: "sky", avatar: "👨", photo: "/avatars/dad.jpg" },
-  { id: "mom", name: "רעות", color: "rose", avatar: "👩", photo: "/avatars/mom.jpg" },
-  { id: "noam", name: "נועם", age: 14, color: "emerald", avatar: "🧒", photo: "/avatars/noam.jpg" },
-  { id: "rom", name: "רום", age: 11, color: "amber", avatar: "🧒", photo: "/avatars/rom.jpg" },
-  { id: "niv", name: "ניב", age: 7, color: "violet", avatar: "🧒", photo: "/avatars/niv.jpg" },
+  { id: "dad", name: "אלמוג", color: "sky", avatar: "👨", photo: avatarUrl("dad.jpg") },
+  { id: "mom", name: "רעות", color: "rose", avatar: "👩", photo: avatarUrl("mom.jpg") },
+  { id: "noam", name: "נועם", age: 14, color: "emerald", avatar: "🧒", photo: avatarUrl("noam.jpg") },
+  { id: "rom", name: "רום", age: 11, color: "amber", avatar: "🧒", photo: avatarUrl("rom.jpg") },
+  { id: "niv", name: "ניב", age: 7, color: "violet", avatar: "🧒", photo: avatarUrl("niv.jpg") },
 ];
 
 const DEFAULT_PETS: Pet[] = [
