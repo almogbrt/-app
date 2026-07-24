@@ -296,6 +296,17 @@ function App() {
     setCompletions((prev) => prev.map((c) => (c.paidOut ? c : { ...c, paidOut: true })));
   }
 
+  function resetPointsWithCode() {
+    const code = window.prompt("קוד גישה לאיפוס נקודות:");
+    if (code === null) return;
+    if (code !== "1492") {
+      window.alert("קוד שגוי");
+      return;
+    }
+    if (!window.confirm("לאפס את כל הנקודות של כל בני המשפחה?")) return;
+    setCompletions((prev) => prev.map((c) => (c.paidOut ? c : { ...c, paidOut: true })));
+  }
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => (activeMemberId ? t.assigneeId === activeMemberId : true))
@@ -333,13 +344,23 @@ function App() {
               {openCount} משימות פתוחות · {doneToday} הושלמו היום
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowPayout((v) => !v)}
-            className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-          >
-            💰 תשלום שבועי
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPayout((v) => !v)}
+              className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+            >
+              💰 תשלום שבועי
+            </button>
+            <button
+              type="button"
+              onClick={resetPointsWithCode}
+              title="איפוס נקודות (דורש קוד גישה)"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            >
+              🔑 איפוס נקודות
+            </button>
+          </div>
         </header>
 
         <section className="mb-6">
