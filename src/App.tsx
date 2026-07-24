@@ -28,6 +28,42 @@ const DEFAULT_PETS: Pet[] = [
 
 const DEFAULT_TASKS: HomeTask[] = [];
 
+function seedTask(
+  id: string,
+  title: string,
+  category: TaskCategory,
+  recurrence: HomeTask["recurrence"],
+  points: number,
+  petId: string | null = null,
+): HomeTask {
+  return {
+    id,
+    title,
+    category,
+    assigneeId: null,
+    petId,
+    dueDate: todayISO(),
+    recurrence,
+    points,
+    done: false,
+    completedAt: null,
+    paidOut: false,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+const SEED_TASKS: HomeTask[] = [
+  seedTask("seed-dishwasher-in", "להכניס מדיח", "מטבח", "daily", 5),
+  seedTask("seed-dishwasher-out", "לפנות מדיח", "מטבח", "daily", 5),
+  seedTask("seed-trash-out", "להוריד זבל", "ניקיון", "daily", 6),
+  seedTask("seed-bins-curb", "סיבוב פחים", "ניקיון", "weekly", 8),
+  seedTask("seed-laundry-down", "להוריד כביסה", "כביסה", "weekly", 5),
+  seedTask("seed-laundry-hang", "לתלות כביסה", "כביסה", "weekly", 5),
+  seedTask("seed-charlie-walk", "סיבוב לצ'ארלי", "חיות מחמד", "daily", 5, "charlie"),
+  seedTask("seed-noga-water", "מים לנוגה", "חיות מחמד", "daily", 5, "noga"),
+  seedTask("seed-zigi-food", "אוכל לזיגי", "חיות מחמד", "daily", 5, "zigi"),
+];
+
 function App() {
   const [members, setMembers] = useLocalStorage<FamilyMember[]>(
     "home-tasks/members",
@@ -54,6 +90,15 @@ function App() {
       return changed ? fixed : prev;
     });
   }, [setMembers]);
+
+  // Add the requested household seed tasks if they aren't already present.
+  useEffect(() => {
+    setTasks((prev) => {
+      const existingIds = new Set(prev.map((t) => t.id));
+      const missing = SEED_TASKS.filter((t) => !existingIds.has(t.id));
+      return missing.length ? [...missing, ...prev] : prev;
+    });
+  }, [setTasks]);
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
   const [activePetId, setActivePetId] = useState<string | null>(null);
