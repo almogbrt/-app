@@ -8,6 +8,7 @@ import { TaskItem } from "./components/TaskItem";
 import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
 import { PointsDashboard } from "./components/PointsDashboard";
+import { ManagementPanel } from "./components/ManagementPanel";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, shuffle, startOfWeekDateISO, todayISO, uid } from "./utils";
 
@@ -65,8 +66,6 @@ const SEED_TASKS: HomeTask[] = [
   seedTask("seed-noga-water", "מים לנוגה", "חיות מחמד", "daily", 8, "noga"),
   seedTask("seed-zigi-food", "אוכל לזיגי", "חיות מחמד", "daily", 8, "zigi"),
 ];
-
-const SEED_BY_ID = new Map(SEED_TASKS.map((t) => [t.id, t]));
 
 function App() {
   const [members, setMembers] = useLocalStorage<FamilyMember[]>(
@@ -145,23 +144,14 @@ function App() {
     });
   }, [setMembers]);
 
-  // Add the requested household seed tasks if they aren't already present,
-  // and keep already-added seed tasks' point values in sync with the latest list.
+  // Add the requested household seed tasks if they aren't already present.
+  // Point values are only set from the seed the first time a task is added —
+  // after that, the management panel is the source of truth for a task's points.
   useEffect(() => {
     setTasks((prev) => {
-      let changed = false;
-      const updated = prev.map((t) => {
-        const seed = SEED_BY_ID.get(t.id);
-        if (seed && seed.points !== t.points) {
-          changed = true;
-          return { ...t, points: seed.points };
-        }
-        return t;
-      });
-      const existingIds = new Set(updated.map((t) => t.id));
+      const existingIds = new Set(prev.map((t) => t.id));
       const missing = SEED_TASKS.filter((t) => !existingIds.has(t.id));
-      if (missing.length) changed = true;
-      return changed ? [...missing, ...updated] : prev;
+      return missing.length ? [...missing, ...prev] : prev;
     });
   }, [setTasks]);
 
@@ -214,6 +204,7 @@ function App() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [category, setCategory] = useState<TaskCategory | "all">("all");
   const [showPayout, setShowPayout] = useState(false);
+  const [showManagement, setShowManagement] = useState(false);
 
   const membersById = useMemo(
     () => Object.fromEntries(members.map((m) => [m.id, m])),
@@ -307,6 +298,20 @@ function App() {
     setCompletions((prev) => prev.map((c) => (c.paidOut ? c : { ...c, paidOut: true })));
   }
 
+  function openManagement() {
+    const code = window.prompt("קוד גישה לניהול:");
+    if (code === null) return;
+    if (code !== "1492") {
+      window.alert("קוד שגוי");
+      return;
+    }
+    setShowManagement(true);
+  }
+
+  function updateTaskPoints(id: string, points: number) {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, points } : t)));
+  }
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => (activeMemberId ? t.assigneeId === activeMemberId : true))
@@ -360,6 +365,14 @@ function App() {
             >
               🔑 איפוס נקודות
             </button>
+            <button
+              type="button"
+              onClick={openManagement}
+              title="ניהול שווי נקודות (דורש קוד גישה)"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+            >
+              ⚙️ ניהול
+            </button>
           </div>
         </header>
 
@@ -376,6 +389,18 @@ function App() {
               setRate={setRate}
               onPayout={runWeeklyPayout}
               onClose={() => setShowPayout(false)}
+            />
+          </section>
+        )}
+
+        {showManagement && (
+          <section className="mb-6">
+            <ManagementPanel
+              tasks={tasks}
+              onUpdatePoints={updateTaskPoints}
+              rate={rate}
+              setRate={setRate}
+              onClose={() => setShowManagement(false)}
             />
           </section>
         )}
