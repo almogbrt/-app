@@ -151,13 +151,29 @@ function App() {
     });
   }, [setTasks]);
 
-  // Once per day, randomly pick family members and hand each of them 3 chores.
+  // Once per day: reopen recurring chores completed on a previous day, then
+  // randomly pick family members and hand each of them 3 chores.
   useEffect(() => {
     if (members.length === 0 || lastAssignDate === todayISO()) return;
 
     setTasks((prev) => {
-      const recurringIds = prev.filter((t) => t.recurrence !== "none").map((t) => t.id);
-      if (recurringIds.length === 0) return prev;
+      const today = todayISO();
+      const reopened = prev.map((t) => {
+        if (t.recurrence === "none") return t;
+        if (t.done || (t.dueDate && t.dueDate < today)) {
+          return {
+            ...t,
+            done: false,
+            dueDate: t.dueDate ? nextOccurrence(t.dueDate, t.recurrence) : t.dueDate,
+          };
+        }
+        return t;
+      });
+
+      const recurringIds = reopened
+        .filter((t) => t.recurrence !== "none")
+        .map((t) => t.id);
+      if (recurringIds.length === 0) return reopened;
 
       const peopleCount = Math.max(
         1,
@@ -171,7 +187,7 @@ function App() {
         assignment.set(taskId, chosen[i % chosen.length].id);
       });
 
-      return prev.map((t) =>
+      return reopened.map((t) =>
         assignment.has(t.id) ? { ...t, assigneeId: assignment.get(t.id)! } : t,
       );
     });
@@ -227,29 +243,17 @@ function App() {
     ]);
 
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const completedCount = (t.completedCount ?? 0) + 1;
-
-        if (t.recurrence !== "none" && t.dueDate) {
-          return {
-            ...t,
-            done: false,
-            completedAt: new Date().toISOString(),
-            completedCount,
-            proofPhoto: photo,
-            dueDate: nextOccurrence(t.dueDate, t.recurrence),
-          };
-        }
-
-        return {
-          ...t,
-          done: true,
-          completedAt: new Date().toISOString(),
-          completedCount,
-          proofPhoto: photo,
-        };
-      }),
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              done: true,
+              completedAt: new Date().toISOString(),
+              completedCount: (t.completedCount ?? 0) + 1,
+              proofPhoto: photo,
+            }
+          : t,
+      ),
     );
   }
 
