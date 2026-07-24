@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FamilyMember, HomeTask, Pet, TaskCategory } from "./types";
 import { useLocalStorage } from "./useLocalStorage";
 import { MembersBar } from "./components/MembersBar";
@@ -39,6 +39,21 @@ function App() {
     DEFAULT_TASKS,
   );
   const [rate, setRate] = useLocalStorage<number>("home-tasks/rate", 1);
+
+  // One-time repair for photo URLs saved before the GitHub Pages base-path fix.
+  useEffect(() => {
+    setMembers((prev) => {
+      let changed = false;
+      const fixed = prev.map((m) => {
+        if (m.photo?.startsWith("/avatars/")) {
+          changed = true;
+          return { ...m, photo: avatarUrl(m.photo.slice("/avatars/".length)) };
+        }
+        return m;
+      });
+      return changed ? fixed : prev;
+    });
+  }, [setMembers]);
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
   const [activePetId, setActivePetId] = useState<string | null>(null);
