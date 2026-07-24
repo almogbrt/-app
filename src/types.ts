@@ -11,6 +11,7 @@ export interface FamilyMember {
   name: string;
   color: MemberColor;
   avatar: string;
+  photo?: string;
 }
 
 export type TaskCategory =

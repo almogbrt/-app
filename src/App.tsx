@@ -4,10 +4,17 @@ import { useLocalStorage } from "./useLocalStorage";
 import { MembersBar } from "./components/MembersBar";
 import { TaskForm } from "./components/TaskForm";
 import { TaskItem } from "./components/TaskItem";
+import { ProfileCard } from "./components/ProfileCard";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, todayISO } from "./utils";
 
-const DEFAULT_MEMBERS: FamilyMember[] = [];
+const DEFAULT_MEMBERS: FamilyMember[] = [
+  { id: "dad", name: "אבא", color: "sky", avatar: "👨", photo: "/avatars/dad.jpg" },
+  { id: "mom", name: "אמא", color: "rose", avatar: "👩", photo: "/avatars/mom.jpg" },
+  { id: "boy-1", name: "הבן הגדול", color: "emerald", avatar: "🧒", photo: "/avatars/boy-1.jpg" },
+  { id: "boy-2", name: "הבן האמצעי", color: "amber", avatar: "🧒", photo: "/avatars/boy-2.jpg" },
+  { id: "boy-3", name: "הבן הקטן", color: "violet", avatar: "🧒", photo: "/avatars/boy-3.jpg" },
+];
 const DEFAULT_TASKS: HomeTask[] = [];
 
 function App() {
@@ -117,6 +124,16 @@ function App() {
             onSelectMember={setActiveMemberId}
           />
         </section>
+
+        {activeMemberId && membersById[activeMemberId] && (
+          <section className="mb-6">
+            <ProfileCard
+              member={membersById[activeMemberId]}
+              tasks={tasks.filter((t) => t.assigneeId === activeMemberId)}
+              points={pointsByMember[activeMemberId] ?? 0}
+            />
+          </section>
+        )}
 
         <section className="mb-6">
           <TaskForm members={members} onAdd={addTask} />

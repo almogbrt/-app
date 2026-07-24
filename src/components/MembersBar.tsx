@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FamilyMember } from "../types";
 import { COLOR_CLASSES, MEMBER_COLORS } from "../constants";
 import { uid } from "../utils";
+import { Avatar } from "./Avatar";
 
 interface Props {
   members: FamilyMember[];
@@ -22,6 +23,8 @@ export function MembersBar({
 }: Props) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
 
   function addMember(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +40,21 @@ export function MembersBar({
   function removeMember(id: string) {
     setMembers((prev) => prev.filter((m) => m.id !== id));
     if (activeMemberId === id) onSelectMember(null);
+  }
+
+  function startRename(m: FamilyMember) {
+    setEditingId(m.id);
+    setEditingName(m.name);
+  }
+
+  function commitRename() {
+    const trimmed = editingName.trim();
+    if (editingId && trimmed) {
+      setMembers((prev) =>
+        prev.map((m) => (m.id === editingId ? { ...m, name: trimmed } : m)),
+      );
+    }
+    setEditingId(null);
   }
 
   return (
@@ -56,25 +74,47 @@ export function MembersBar({
       {members.map((m) => {
         const colors = COLOR_CLASSES[m.color];
         const active = activeMemberId === m.id;
+        const isEditing = editingId === m.id;
         return (
           <div key={m.id} className="group relative">
-            <button
-              type="button"
-              onClick={() => onSelectMember(active ? null : m.id)}
-              className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
-                active
-                  ? `ring-2 ${colors.ring} border-transparent ${colors.chip}`
-                  : "border-slate-300 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-300"
-              }`}
-            >
-              <span className="text-lg leading-none">{m.avatar}</span>
-              <span>{m.name}</span>
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-xs font-semibold ${colors.chip}`}
+            {isEditing ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  commitRename();
+                }}
+                className="flex items-center gap-2 rounded-full border border-slate-300 px-2 py-1 dark:border-slate-700"
               >
-                {pointsByMember[m.id] ?? 0} ⭐
-              </span>
-            </button>
+                <Avatar member={m} size="sm" />
+                <input
+                  autoFocus
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={commitRename}
+                  className="w-20 bg-transparent text-sm focus:outline-none"
+                />
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onSelectMember(active ? null : m.id)}
+                onDoubleClick={() => startRename(m)}
+                title="לחיצה כפולה לשינוי שם"
+                className={`flex items-center gap-2 rounded-full border py-1 pl-3 pr-1.5 text-sm font-medium transition ${
+                  active
+                    ? `ring-2 ${colors.ring} border-transparent ${colors.chip}`
+                    : "border-slate-300 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-300"
+                }`}
+              >
+                <Avatar member={m} size="sm" />
+                <span>{m.name}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-xs font-semibold ${colors.chip}`}
+                >
+                  {pointsByMember[m.id] ?? 0} ⭐
+                </span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => removeMember(m.id)}

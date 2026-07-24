@@ -1,6 +1,7 @@
 import type { FamilyMember, HomeTask } from "../types";
 import { CATEGORY_ICONS, COLOR_CLASSES } from "../constants";
 import { formatDueDate, isOverdue } from "../utils";
+import { Avatar } from "./Avatar";
 
 interface Props {
   task: HomeTask;
@@ -80,10 +81,10 @@ export function TaskItem({ task, assignee, onToggle, onDelete }: Props) {
 
       {assignee && colors ? (
         <span
-          className={`flex items-center gap-1 rounded-full px-2 py-1 text-sm ${colors.chip}`}
+          className={`flex items-center gap-1.5 rounded-full py-1 pl-2 pr-1 text-sm ${colors.chip}`}
           title={assignee.name}
         >
-          <span>{assignee.avatar}</span>
+          <Avatar member={assignee} size="sm" />
           <span className="hidden sm:inline">{assignee.name}</span>
         </span>
       ) : (
