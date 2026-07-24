@@ -316,6 +316,25 @@ function App() {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, assigneeId } : t)));
   }
 
+  function sendPointsSummaryEmail() {
+    const ranked = [...members].sort(
+      (a, b) => (pointsByMember[b.id] ?? 0) - (pointsByMember[a.id] ?? 0),
+    );
+    const topScore = ranked.length ? (pointsByMember[ranked[0].id] ?? 0) : 0;
+
+    const lines = ranked.map((m, i) => {
+      const pts = pointsByMember[m.id] ?? 0;
+      const crown = pts > 0 && pts === topScore ? " 🏆 (הזוכה השבוע!)" : "";
+      return `${i + 1}. ${m.name} - ${pts} נקודות${crown}`;
+    });
+
+    const subject = "סיכום נקודות שבועי - The Bartian's";
+    const body = [`סיכום הנקודות של המשפחה לשבוע זה:`, "", ...lines].join("\n");
+
+    const mailto = `mailto:almogbrt@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => (activeMemberId ? t.assigneeId === activeMemberId : true))
@@ -376,6 +395,14 @@ function App() {
               className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
               ⚙️ ניהול
+            </button>
+            <button
+              type="button"
+              onClick={sendPointsSummaryEmail}
+              title="שליחת סיכום הנקודות למייל almogbrt@gmail.com"
+              className="rounded-full border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300"
+            >
+              📧 שלח סיכום במייל
             </button>
           </div>
         </header>
