@@ -9,7 +9,7 @@ import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
 import { PointsDashboard } from "./components/PointsDashboard";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
-import { nextOccurrence, todayISO } from "./utils";
+import { nextOccurrence, shuffle, todayISO } from "./utils";
 
 const avatarUrl = (file: string) => `${import.meta.env.BASE_URL}avatars/${file}`;
 
@@ -80,6 +80,10 @@ function App() {
     DEFAULT_TASKS,
   );
   const [rate, setRate] = useLocalStorage<number>("home-tasks/rate", 1);
+  const [lastAssignDate, setLastAssignDate] = useLocalStorage<string>(
+    "home-tasks/lastAssignDate",
+    "",
+  );
 
   // One-time repair for photo URLs saved before the GitHub Pages base-path fix.
   useEffect(() => {
@@ -115,6 +119,34 @@ function App() {
       return changed ? [...missing, ...updated] : prev;
     });
   }, [setTasks]);
+
+  // Once per day, randomly pick family members and hand each of them 3 chores.
+  useEffect(() => {
+    if (members.length === 0 || lastAssignDate === todayISO()) return;
+
+    setTasks((prev) => {
+      const recurringIds = prev.filter((t) => t.recurrence !== "none").map((t) => t.id);
+      if (recurringIds.length === 0) return prev;
+
+      const peopleCount = Math.max(
+        1,
+        Math.min(members.length, Math.floor(recurringIds.length / 3) || 1),
+      );
+      const chosen = shuffle(members).slice(0, peopleCount);
+      const shuffledTaskIds = shuffle(recurringIds);
+
+      const assignment = new Map<string, string>();
+      shuffledTaskIds.forEach((taskId, i) => {
+        assignment.set(taskId, chosen[i % chosen.length].id);
+      });
+
+      return prev.map((t) =>
+        assignment.has(t.id) ? { ...t, assigneeId: assignment.get(t.id)! } : t,
+      );
+    });
+
+    setLastAssignDate(todayISO());
+  }, [members, lastAssignDate, setTasks, setLastAssignDate]);
 
   const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
   const [activePetId, setActivePetId] = useState<string | null>(null);
