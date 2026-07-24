@@ -312,6 +312,10 @@ function App() {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, points } : t)));
   }
 
+  function updateTaskAssignee(id: string, assigneeId: string | null) {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, assigneeId } : t)));
+  }
+
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => (activeMemberId ? t.assigneeId === activeMemberId : true))
@@ -397,7 +401,9 @@ function App() {
           <section className="mb-6">
             <ManagementPanel
               tasks={tasks}
+              members={members}
               onUpdatePoints={updateTaskPoints}
+              onUpdateAssignee={updateTaskAssignee}
               rate={rate}
               setRate={setRate}
               onClose={() => setShowManagement(false)}

@@ -1,20 +1,30 @@
-import type { HomeTask } from "../types";
+import type { FamilyMember, HomeTask } from "../types";
 import { CATEGORY_ICONS } from "../constants";
 
 interface Props {
   tasks: HomeTask[];
+  members: FamilyMember[];
   onUpdatePoints: (id: string, points: number) => void;
+  onUpdateAssignee: (id: string, assigneeId: string | null) => void;
   rate: number;
   setRate: (rate: number) => void;
   onClose: () => void;
 }
 
-export function ManagementPanel({ tasks, onUpdatePoints, rate, setRate, onClose }: Props) {
+export function ManagementPanel({
+  tasks,
+  members,
+  onUpdatePoints,
+  onUpdateAssignee,
+  rate,
+  setRate,
+  onClose,
+}: Props) {
   return (
     <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-bold text-slate-800 dark:text-slate-100">
-          ⚙️ ניהול נקודות ושווי
+          ⚙️ ניהול נקודות ושיוך
         </h2>
         <button
           type="button"
@@ -45,11 +55,25 @@ export function ManagementPanel({ tasks, onUpdatePoints, rate, setRate, onClose 
           {tasks.map((t) => (
             <div
               key={t.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 dark:bg-slate-900"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 dark:bg-slate-900"
             >
-              <span className="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                 {CATEGORY_ICONS[t.category]} {t.title}
               </span>
+
+              <select
+                value={t.assigneeId ?? ""}
+                onChange={(e) => onUpdateAssignee(t.id, e.target.value || null)}
+                className="flex-shrink-0 rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+              >
+                <option value="">ללא אחראי</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.avatar} {m.name}
+                  </option>
+                ))}
+              </select>
+
               <label className="flex flex-shrink-0 items-center gap-1 text-sm text-slate-500">
                 <input
                   type="number"
