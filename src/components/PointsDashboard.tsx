@@ -17,9 +17,12 @@ export function PointsDashboard({ members, pointsByMember }: Props) {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="mb-3 font-bold text-slate-800 dark:text-slate-100">
-        🏆 לוח הנקודות
-      </h2>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-bold text-slate-800 dark:text-slate-100">
+          🏆 לוח הנקודות השבועי
+        </h2>
+        <span className="text-xs text-slate-400">מתאפס כל יום ראשון</span>
+      </div>
       <div className="space-y-2">
         {ranked.map((m, i) => {
           const pts = pointsByMember[m.id] ?? 0;

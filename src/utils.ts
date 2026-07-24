@@ -37,6 +37,13 @@ export function uid(): string {
   return crypto.randomUUID();
 }
 
+export function startOfWeekDateISO(): string {
+  const now = new Date();
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - now.getDay());
+  return sunday.toISOString().slice(0, 10);
+}
+
 export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {

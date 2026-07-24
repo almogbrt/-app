@@ -9,7 +9,7 @@ import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
 import { PointsDashboard } from "./components/PointsDashboard";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
-import { nextOccurrence, shuffle, todayISO, uid } from "./utils";
+import { nextOccurrence, shuffle, startOfWeekDateISO, todayISO, uid } from "./utils";
 
 const avatarUrl = (file: string) => `${import.meta.env.BASE_URL}avatars/${file}`;
 
@@ -91,6 +91,20 @@ function App() {
     "home-tasks/completionsMigrated",
     false,
   );
+  const [lastWeekReset, setLastWeekReset] = useLocalStorage<string>(
+    "home-tasks/lastWeekReset",
+    startOfWeekDateISO(),
+  );
+
+  // Every Sunday, archive last week's points so the live dashboard starts back at 0.
+  useEffect(() => {
+    const currentWeekStart = startOfWeekDateISO();
+    if (lastWeekReset === currentWeekStart) return;
+    setCompletions((prev) =>
+      prev.map((c) => (c.paidOut ? c : { ...c, paidOut: true })),
+    );
+    setLastWeekReset(currentWeekStart);
+  }, [lastWeekReset, setCompletions, setLastWeekReset]);
 
   // One-time: convert points earned under the old task-level completedCount
   // model (which mis-attributed everything to the task's *current* assignee)
@@ -210,7 +224,7 @@ function App() {
   const pointsByMember = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const c of completions) {
-      if (c.memberId) {
+      if (c.memberId && !c.paidOut) {
         totals[c.memberId] = (totals[c.memberId] ?? 0) + c.points;
       }
     }
