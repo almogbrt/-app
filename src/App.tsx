@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { FamilyMember, HomeTask, Pet, TaskCategory, TaskCompletion } from "./types";
+import type {
+  FamilyMember,
+  HomeTask,
+  Pet,
+  ShoppingItem,
+  TaskCategory,
+  TaskCompletion,
+} from "./types";
 import { useLocalStorage } from "./useLocalStorage";
 import { MembersBar } from "./components/MembersBar";
 import { PetsBar } from "./components/PetsBar";
@@ -9,6 +16,7 @@ import { ProfileCard } from "./components/ProfileCard";
 import { PayoutPanel } from "./components/PayoutPanel";
 import { PointsDashboard } from "./components/PointsDashboard";
 import { ManagementPanel } from "./components/ManagementPanel";
+import { ShoppingList } from "./components/ShoppingList";
 import { FilterBar, type StatusFilter } from "./components/FilterBar";
 import { nextOccurrence, shuffle, startOfWeekDateISO, todayISO, uid } from "./utils";
 
@@ -93,6 +101,10 @@ function App() {
   const [lastWeekReset, setLastWeekReset] = useLocalStorage<string>(
     "home-tasks/lastWeekReset",
     startOfWeekDateISO(),
+  );
+  const [shoppingList, setShoppingList] = useLocalStorage<ShoppingItem[]>(
+    "home-tasks/shoppingList",
+    [],
   );
 
   // Every Sunday, archive last week's points so the live dashboard starts back at 0.
@@ -455,6 +467,10 @@ function App() {
             activePetId={activePetId}
             onSelectPet={setActivePetId}
           />
+        </section>
+
+        <section className="mb-6">
+          <ShoppingList items={shoppingList} setItems={setShoppingList} />
         </section>
 
         {activeMemberId && membersById[activeMemberId] && (

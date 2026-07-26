@@ -59,3 +59,10 @@ export interface TaskCompletion {
   completedAt: string;
   paidOut: boolean;
 }
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  quantity: number;
+  createdAt: string;
+}
